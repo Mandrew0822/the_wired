@@ -1,0 +1,28 @@
+<body>
+  <div class="container">
+    <header>
+      <h1>The_Wired</h1>
+      <nav>
+        <a href="/upload">Upload</a>
+      </nav>
+    </header>
+
+    <p>Hello, welcome to The_Wired — your classified file sharing site.</p>
+    <p>All files uploaded must be of some protected nature by a government.</p>
+    <p>We too must know.
+
+
+    <form method="get" action="/" class="search-bar">
+      <input type="text" name="q" placeholder="Search files..." value="{{ query }}">
+      <input type="submit" value="Search">
+    </form>
+
+    <ul>
+      {% for file in files %}
+        <li><a href="{{ url_for('download', filename=file) }}">{{ file }}</a></li>
+      {% else %}
+        <li>No files found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
