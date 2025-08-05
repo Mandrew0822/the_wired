@@ -10,7 +10,7 @@ app.secret_key = 'your-secret-key-change-this'
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
-MAX_FILE_SIZE = 512 * 1024 * 1024
+MAX_FILE_SIZE = 512 * 1024 * 1024  # 16MB max file size
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'zip', 'mp3', 'mp4', 'avi'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -116,20 +116,6 @@ def download_file(filename):
     except Exception as e:
         flash('Error downloading file')
         return redirect(url_for('index'))
-
-@app.route('/delete/<filename>')
-def delete_file(filename):
-    try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            flash(f'File "{filename}" deleted successfully')
-        else:
-            flash('File not found')
-    except Exception as e:
-        flash('Error deleting file')
-    
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
