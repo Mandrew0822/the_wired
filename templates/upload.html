@@ -5,177 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload - The Wired</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="logo">
-                <i class="fas fa-network-wired"></i>
-                The Wired
-            </h1>
-            <p class="tagline">Share files across the network</p>
-        </header>
+    <header>
+        <h1>THE WIRED</h1>
+        <p style="color: #66ff66; margin-top: 0.5rem;">Secure Document Repository</p>
+    </header>
 
-        <nav class="nav">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                <i class="fas fa-home"></i>
-                Back to Files
-            </a>
-        </nav>
+    <nav>
+        <a href="{{ url_for('index') }}">Browse Files</a>
+        <a href="{{ url_for('upload') }}" class="active">Upload Document</a>
+    </nav>
 
-        {% with messages = get_flashed_messages() %}
+    <main>
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="messages">
-                    {% for message in messages %}
-                        <div class="alert">{{ message }}</div>
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
                     {% endfor %}
                 </div>
             {% endif %}
         {% endwith %}
 
-        <div class="upload-section">
-            <div class="upload-container">
-                <h2>
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    Upload File
-                </h2>
+        <!-- Upload Form -->
+        <section>
+            <div class="upload-form">
+                <h2 style="text-align: center; margin-bottom: 2rem; color: #00ff00;">Upload Document</h2>
                 
-                <form method="POST" enctype="multipart/form-data" class="upload-form">
-                    <div class="file-drop-zone" id="dropZone">
-                        <div class="drop-zone-content">
-                            <i class="fas fa-cloud-upload-alt drop-icon"></i>
-                            <h3>Drag & Drop your file here</h3>
-                            <p>or click to browse</p>
-                            <input type="file" name="file" id="fileInput" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip,.mp3,.mp4,.avi" required>
-                        </div>
-                    </div>
-                    
-                    <div class="file-info" id="fileInfo" style="display: none;">
-                        <div class="selected-file">
-                            <i class="fas fa-file selected-file-icon"></i>
-                            <div class="selected-file-details">
-                                <span class="selected-file-name"></span>
-                                <span class="selected-file-size"></span>
-                            </div>
-                            <button type="button" class="remove-file" id="removeFile">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
+                <form method="POST" enctype="multipart/form-data" id="upload-form">
+                    <div class="form-group">
+                        <label for="file">Select File:</label>
+                        <input type="file" 
+                               id="file" 
+                               name="file" 
+                               class="form-control" 
+                               accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip,.rar,.mp3,.mp4,.avi"
+                               required>
+                        <small style="color: #888888; margin-top: 0.5rem; display: block;">
+                            Allowed types: TXT, PDF, PNG, JPG, JPEG, GIF, DOC, DOCX, ZIP, RAR, MP3, MP4, AVI<br>
+                            Maximum file size: 50MB
+                        </small>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-upload" id="uploadBtn" disabled>
-                        <i class="fas fa-upload"></i>
-                        Upload File
-                    </button>
+                    <div class="form-group">
+                        <label for="description">Description (Optional):</label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  placeholder="Enter a description for this document..."></textarea>
+                    </div>
+
+                    <div class="form-group" style="text-align: center;">
+                        <button type="submit" class="btn" id="submit-btn">
+                            <span id="submit-text">Upload Document</span>
+                            <span id="upload-loading" class="loading" style="display: none; margin-left: 10px;"></span>
+                        </button>
+                    </div>
                 </form>
 
-                <div class="upload-info">
-                    <h3>Allowed File Types:</h3>
-                    <div class="file-types">
-                        <span class="file-type">TXT</span>
-                        <span class="file-type">PDF</span>
-                        <span class="file-type">PNG</span>
-                        <span class="file-type">JPG</span>
-                        <span class="file-type">GIF</span>
-                        <span class="file-type">DOC</span>
-                        <span class="file-type">DOCX</span>
-                        <span class="file-type">ZIP</span>
-                        <span class="file-type">MP3</span>
-                        <span class="file-type">MP4</span>
-                        <span class="file-type">AVI</span>
-                    </div>
-                    <p><strong>Maximum file size:</strong> 16 MB</p>
+                <!-- Upload Guidelines -->
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+                    <h3 style="color: #66ff66; margin-bottom: 1rem;">Upload Guidelines:</h3>
+                    <ul style="color: #888888; line-height: 1.8;">
+                        <li>Files are stored securely and anonymously</li>
+                        <li>Each file gets a unique identifier</li>
+                        <li>Add descriptions to make files easier to find</li>
+                        <li>All uploads are logged with timestamps</li>
+                        <li>Use the search function to find uploaded documents</li>
+                        <li>Files can be deleted by any user - upload responsibly</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
+
+        <!-- Recent Uploads Preview -->
+        <section style="margin-top: 3rem;">
+            <div style="background-color: #1a1a1a; border: 2px solid #00ff00; border-radius: 8px; padding: 2rem; text-align: center;">
+                <h3 style="color: #66ff66; margin-bottom: 1rem;">Quick Stats</h3>
+                <div class="stats-grid" id="upload-stats">
+                    <div class="loading"></div>
+                </div>
+                <p style="color: #888888; margin-top: 1rem;">
+                    <a href="{{ url_for('index') }}" style="color: #00ff00;">← Back to Browse Files</a>
+                </p>
+            </div>
+        </section>
+    </main>
 
     <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileInfo = document.getElementById('fileInfo');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const removeFileBtn = document.getElementById('removeFile');
+        // Load statistics
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                const statsGrid = document.getElementById('upload-stats');
+                statsGrid.innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-value">${data.total_files}</div>
+                        <div class="stat-label">Files in Repository</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.total_size_mb}</div>
+                        <div class="stat-label">Total Size (MB)</div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                const statsGrid = document.getElementById('upload-stats');
+                statsGrid.innerHTML = '<div style="color: #ff0066;">Stats unavailable</div>';
+            });
 
-        // Drag and drop functionality
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
+        // Handle form submission
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submit-btn');
+            const submitText = document.getElementById('submit-text');
+            const uploadLoading = document.getElementById('upload-loading');
+            const fileInput = document.getElementById('file');
             
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                handleFileSelect(files[0]);
+            // Check if file is selected
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload.');
+                e.preventDefault();
+                return;
             }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelect(e.target.files[0]);
-            }
-        });
-
-        removeFileBtn.addEventListener('click', () => {
-            fileInput.value = '';
-            fileInfo.style.display = 'none';
-            dropZone.style.display = 'block';
-            uploadBtn.disabled = true;
-        });
-
-        function handleFileSelect(file) {
-            const fileName = file.name;
-            const fileSize = formatFileSize(file.size);
-            const fileExtension = fileName.split('.').pop().toLowerCase();
-
-            // Update file info display
-            document.querySelector('.selected-file-name').textContent = fileName;
-            document.querySelector('.selected-file-size').textContent = fileSize;
-
-            // Update file icon based on type
-            const iconElement = document.querySelector('.selected-file-icon');
-            iconElement.className = 'fas selected-file-icon';
             
-            if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
-                iconElement.classList.add('fa-image');
-            } else if (['mp4', 'avi', 'mov'].includes(fileExtension)) {
-                iconElement.classList.add('fa-video');
-            } else if (['mp3', 'wav'].includes(fileExtension)) {
-                iconElement.classList.add('fa-music');
-            } else if (fileExtension === 'pdf') {
-                iconElement.classList.add('fa-file-pdf');
-            } else if (['doc', 'docx'].includes(fileExtension)) {
-                iconElement.classList.add('fa-file-word');
-            } else if (['zip', 'rar'].includes(fileExtension)) {
-                iconElement.classList.add('fa-file-archive');
-            } else {
-                iconElement.classList.add('fa-file');
+            // Check file size (50MB limit)
+            const file = fileInput.files[0];
+            const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+            
+            if (file.size > maxSize) {
+                alert('File size exceeds 50MB limit. Please choose a smaller file.');
+                e.preventDefault();
+                return;
             }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.textContent = 'Uploading...';
+            uploadLoading.style.display = 'inline-block';
+        });
 
-            // Show file info and hide drop zone
-            dropZone.style.display = 'none';
-            fileInfo.style.display = 'block';
-            uploadBtn.disabled = false;
-        }
+        // File input change handler
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                console.log(`Selected file: ${file.name} (${sizeMB} MB)`);
+                
+                // Show file info
+                const fileInfo = document.createElement('div');
+                fileInfo.style.cssText = 'margin-top: 0.5rem; color: #66ff66; font-size: 0.9rem;';
+                fileInfo.textContent = `Selected: ${file.name} (${sizeMB} MB)`;
+                
+                // Remove any existing file info
+                const existingInfo = document.querySelector('.file-info');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                
+                fileInfo.className = 'file-info';
+                e.target.parentNode.appendChild(fileInfo);
+            }
+        });
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
+        // Auto-focus file input
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('file').focus();
+        });
     </script>
 </body>
 </html>
