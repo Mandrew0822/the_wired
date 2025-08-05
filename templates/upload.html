@@ -1,15 +1,181 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Upload File</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload - The Wired</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <h2>Upload a File</h2>
-  <form method="post" enctype="multipart/form-data">
-    <input type="file" name="file" required>
-    <input type="submit" value="Upload">
-  </form>
-  <a href="/">Back</a>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">
+                <i class="fas fa-network-wired"></i>
+                The Wired
+            </h1>
+            <p class="tagline">Share files across the network</p>
+        </header>
+
+        <nav class="nav">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i>
+                Back to Files
+            </a>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="upload-section">
+            <div class="upload-container">
+                <h2>
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    Upload File
+                </h2>
+                
+                <form method="POST" enctype="multipart/form-data" class="upload-form">
+                    <div class="file-drop-zone" id="dropZone">
+                        <div class="drop-zone-content">
+                            <i class="fas fa-cloud-upload-alt drop-icon"></i>
+                            <h3>Drag & Drop your file here</h3>
+                            <p>or click to browse</p>
+                            <input type="file" name="file" id="fileInput" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip,.mp3,.mp4,.avi" required>
+                        </div>
+                    </div>
+                    
+                    <div class="file-info" id="fileInfo" style="display: none;">
+                        <div class="selected-file">
+                            <i class="fas fa-file selected-file-icon"></i>
+                            <div class="selected-file-details">
+                                <span class="selected-file-name"></span>
+                                <span class="selected-file-size"></span>
+                            </div>
+                            <button type="button" class="remove-file" id="removeFile">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-upload" id="uploadBtn" disabled>
+                        <i class="fas fa-upload"></i>
+                        Upload File
+                    </button>
+                </form>
+
+                <div class="upload-info">
+                    <h3>Allowed File Types:</h3>
+                    <div class="file-types">
+                        <span class="file-type">TXT</span>
+                        <span class="file-type">PDF</span>
+                        <span class="file-type">PNG</span>
+                        <span class="file-type">JPG</span>
+                        <span class="file-type">GIF</span>
+                        <span class="file-type">DOC</span>
+                        <span class="file-type">DOCX</span>
+                        <span class="file-type">ZIP</span>
+                        <span class="file-type">MP3</span>
+                        <span class="file-type">MP4</span>
+                        <span class="file-type">AVI</span>
+                    </div>
+                    <p><strong>Maximum file size:</strong> 16 MB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const removeFileBtn = document.getElementById('removeFile');
+
+        // Drag and drop functionality
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        removeFileBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            dropZone.style.display = 'block';
+            uploadBtn.disabled = true;
+        });
+
+        function handleFileSelect(file) {
+            const fileName = file.name;
+            const fileSize = formatFileSize(file.size);
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+
+            // Update file info display
+            document.querySelector('.selected-file-name').textContent = fileName;
+            document.querySelector('.selected-file-size').textContent = fileSize;
+
+            // Update file icon based on type
+            const iconElement = document.querySelector('.selected-file-icon');
+            iconElement.className = 'fas selected-file-icon';
+            
+            if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                iconElement.classList.add('fa-image');
+            } else if (['mp4', 'avi', 'mov'].includes(fileExtension)) {
+                iconElement.classList.add('fa-video');
+            } else if (['mp3', 'wav'].includes(fileExtension)) {
+                iconElement.classList.add('fa-music');
+            } else if (fileExtension === 'pdf') {
+                iconElement.classList.add('fa-file-pdf');
+            } else if (['doc', 'docx'].includes(fileExtension)) {
+                iconElement.classList.add('fa-file-word');
+            } else if (['zip', 'rar'].includes(fileExtension)) {
+                iconElement.classList.add('fa-file-archive');
+            } else {
+                iconElement.classList.add('fa-file');
+            }
+
+            // Show file info and hide drop zone
+            dropZone.style.display = 'none';
+            fileInfo.style.display = 'block';
+            uploadBtn.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
 </body>
 </html>
