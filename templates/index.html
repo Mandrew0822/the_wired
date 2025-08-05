@@ -1,28 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wired - File Sharing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
 <body>
-  <div class="container">
-    <header>
-      <h1>The_Wired</h1>
-      <nav>
-        <a href="/upload">Upload</a>
-      </nav>
-    </header>
-
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">
+                <i class="fas fa-network-wired"></i>
+                The Wired
+            </h1>
+            <p class="tagline">Share files across the network</p>
+        </header>
+      
     <p>Hello, welcome to The_Wired — your classified file sharing site.</p>
     <p>All files uploaded must be of some protected nature by a government.</p>
-    <p>We too must know.
+    <p>We too must know.</p>
+      
+        <nav class="nav">
+            <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
+                <i class="fas fa-upload"></i>
+                Upload File
+            </a>
+        </nav>
 
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <form method="get" action="/" class="search-bar">
-      <input type="text" name="q" placeholder="Search files..." value="{{ query }}">
-      <input type="submit" value="Search">
-    </form>
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search files...">
+                <button id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
 
-    <ul>
-      {% for file in files %}
-        <li><a href="{{ url_for('download', filename=file) }}">{{ file }}</a></li>
-      {% else %}
-        <li>No files found.</li>
-      {% endfor %}
-    </ul>
-  </div>
+        <div class="files-section">
+            <h2>Available Files</h2>
+            <div id="filesList" class="files-grid">
+                {% if files %}
+                    {% for file in files %}
+                        <div class="file-card">
+                            <div class="file-icon">
+                                {% set ext = file.name.split('.')[-1].lower() %}
+                                {% if ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <i class="fas fa-image"></i>
+                                {% elif ext in ['mp4', 'avi', 'mov'] %}
+                                    <i class="fas fa-video"></i>
+                                {% elif ext in ['mp3', 'wav'] %}
+                                    <i class="fas fa-music"></i>
+                                {% elif ext in ['pdf'] %}
+                                    <i class="fas fa-file-pdf"></i>
+                                {% elif ext in ['doc', 'docx'] %}
+                                    <i class="fas fa-file-word"></i>
+                                {% elif ext in ['zip', 'rar'] %}
+                                    <i class="fas fa-file-archive"></i>
+                                {% else %}
+                                    <i class="fas fa-file"></i>
+                                {% endif %}
+                            </div>
+                            <div class="file-info">
+                                <h3 class="file-name">{{ file.name }}</h3>
+                                <p class="file-details">
+                                    Size: {{ file.size_mb }} MB<br>
+                                    Uploaded: {{ file.upload_date }}
+                                </p>
+                            </div>
+                            <div class="file-actions">
+                                <a href="{{ url_for('download_file', filename=file.name) }}" class="btn btn-download">
+                                    <i class="fas fa-download"></i>
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h3>No files available</h3>
+                        <p>Upload some files to get started!</p>
+                        <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i>
+                            Upload Your First File
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const filesList = document.getElementById('filesList');
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            
+            if (query === '') {
+                location.reload();
+                return;
+            }
+
+            fetch(`/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayFiles(data.files);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                });
+        }
+
+        function displayFiles(files) {
+            if (files.length === 0) {
+                filesList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No files found</h3>
+                        <p>Try a different search term</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                let icon = 'fas fa-file';
+                
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) icon = 'fas fa-image';
+                else if (['mp4', 'avi', 'mov'].includes(ext)) icon = 'fas fa-video';
+                else if (['mp3', 'wav'].includes(ext)) icon = 'fas fa-music';
+                else if (ext === 'pdf') icon = 'fas fa-file-pdf';
+                else if (['doc', 'docx'].includes(ext)) icon = 'fas fa-file-word';
+                else if (['zip', 'rar'].includes(ext)) icon = 'fas fa-file-archive';
+
+                return `
+                    <div class="file-card">
+                        <div class="file-icon">
+                            <i class="${icon}"></i>
+                        </div>
+                        <div class="file-info">
+                            <h3 class="file-name">${file.name}</h3>
+                            <p class="file-details">
+                                Size: ${file.size_mb} MB<br>
+                                Uploaded: ${file.upload_date}
+                            </p>
+                        </div>
+                        <div class="file-actions">
+                            <a href="/download/${encodeURIComponent(file.name)}" class="btn btn-download">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        // Clear search
+        searchInput.addEventListener('input', function() {
+            if (this.value === '') {
+                location.reload();
+            }
+        });
+    </script>
 </body>
+</html>
