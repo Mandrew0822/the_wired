@@ -3,176 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload - The Wired</title>
+    <title>upload - the wired</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <header>
-        <h1>THE WIRED</h1>
-        <p style="color: #66ff66; margin-top: 0.5rem;">Secure Document Repository</p>
-    </header>
+    <div class="container">
+        <header>
+            <h1>the wired</h1>
+            <p>anonymous file sharing</p>
+        </header>
 
-    <nav>
-        <a href="{{ url_for('index') }}">Browse Files</a>
-        <a href="{{ url_for('upload') }}" class="active">Upload Document</a>
-    </nav>
+        <nav>
+            <a href="/">search</a>
+            <span>|</span>
+            <a href="#" class="active">upload</a>
+        </nav>
 
-    <main>
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <!-- Upload Form -->
-        <section>
-            <div class="upload-form">
-                <h2 style="text-align: center; margin-bottom: 2rem; color: #00ff00;">Upload Document</h2>
-                
-                <form method="POST" enctype="multipart/form-data" id="upload-form">
-                    <div class="form-group">
-                        <label for="file">Select File:</label>
-                        <input type="file" 
-                               id="file" 
-                               name="file" 
-                               class="form-control" 
-                               accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip,.rar,.mp3,.mp4,.avi"
-                               required>
-                        <small style="color: #888888; margin-top: 0.5rem; display: block;">
-                            Allowed types: TXT, PDF, PNG, JPG, JPEG, GIF, DOC, DOCX, ZIP, RAR, MP3, MP4, AVI<br>
-                            Maximum file size: 50MB
-                        </small>
+        <main>
+            <div class="upload-section">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="file-input-container">
+                        <input type="file" id="fileInput" name="file" required>
+                        <label for="fileInput" class="file-input-label">
+                            <span id="fileLabel">choose file</span>
+                        </label>
                     </div>
-
-                    <div class="form-group">
-                        <label for="description">Description (Optional):</label>
-                        <textarea id="description" 
-                                  name="description" 
-                                  class="form-control" 
-                                  placeholder="Enter a description for this document..."></textarea>
-                    </div>
-
-                    <div class="form-group" style="text-align: center;">
-                        <button type="submit" class="btn" id="submit-btn">
-                            <span id="submit-text">Upload Document</span>
-                            <span id="upload-loading" class="loading" style="display: none; margin-left: 10px;"></span>
-                        </button>
-                    </div>
+                    
+                    <button type="submit" id="uploadBtn" disabled>upload</button>
                 </form>
 
-                <!-- Upload Guidelines -->
-                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
-                    <h3 style="color: #66ff66; margin-bottom: 1rem;">Upload Guidelines:</h3>
-                    <ul style="color: #888888; line-height: 1.8;">
-                        <li>Files are stored securely and anonymously</li>
-                        <li>Each file gets a unique identifier</li>
-                        <li>Add descriptions to make files easier to find</li>
-                        <li>All uploads are logged with timestamps</li>
-                        <li>Use the search function to find uploaded documents</li>
-                        <li>Files can be deleted by any user - upload responsibly</li>
-                    </ul>
+                <div id="uploadStatus" class="upload-status"></div>
+                <div id="uploadProgress" class="progress-container" style="display: none;">
+                    <div class="progress-bar"></div>
                 </div>
             </div>
-        </section>
-
-        <!-- Recent Uploads Preview -->
-        <section style="margin-top: 3rem;">
-            <div style="background-color: #1a1a1a; border: 2px solid #00ff00; border-radius: 8px; padding: 2rem; text-align: center;">
-                <h3 style="color: #66ff66; margin-bottom: 1rem;">Quick Stats</h3>
-                <div class="stats-grid" id="upload-stats">
-                    <div class="loading"></div>
-                </div>
-                <p style="color: #888888; margin-top: 1rem;">
-                    <a href="{{ url_for('index') }}" style="color: #00ff00;">← Back to Browse Files</a>
-                </p>
-            </div>
-        </section>
-    </main>
+        </main>
+    </div>
 
     <script>
-        // Load statistics
-        fetch('/api/stats')
-            .then(response => response.json())
-            .then(data => {
-                const statsGrid = document.getElementById('upload-stats');
-                statsGrid.innerHTML = `
-                    <div class="stat-item">
-                        <div class="stat-value">${data.total_files}</div>
-                        <div class="stat-label">Files in Repository</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${data.total_size_mb}</div>
-                        <div class="stat-label">Total Size (MB)</div>
-                    </div>
-                `;
-            })
-            .catch(error => {
-                const statsGrid = document.getElementById('upload-stats');
-                statsGrid.innerHTML = '<div style="color: #ff0066;">Stats unavailable</div>';
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadProgress = document.getElementById('uploadProgress');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const fileName = file.name;
+                const fileSize = formatFileSize(file.size);
+                
+                fileLabel.textContent = `${fileName} (${fileSize})`;
+                uploadBtn.disabled = false;
+            } else {
+                fileLabel.textContent = 'choose file';
+                uploadBtn.disabled = true;
+            }
+        });
+
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('no file selected', 'error');
+                return;
+            }
+
+            if (file.size > 500 * 1024 * 1024) { // 500MB limit
+                showStatus('file too large (max 500MB)', 'error');
+                return;
+            }
+
+            formData.append('file', file);
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'uploading...';
+            uploadProgress.style.display = 'block';
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    const progressBar = uploadProgress.querySelector('.progress-bar');
+                    progressBar.style.width = percentComplete + '%';
+                }
             });
 
-        // Handle form submission
-        document.getElementById('upload-form').addEventListener('submit', function(e) {
-            const submitBtn = document.getElementById('submit-btn');
-            const submitText = document.getElementById('submit-text');
-            const uploadLoading = document.getElementById('upload-loading');
-            const fileInput = document.getElementById('file');
-            
-            // Check if file is selected
-            if (!fileInput.files.length) {
-                alert('Please select a file to upload.');
-                e.preventDefault();
-                return;
-            }
-            
-            // Check file size (50MB limit)
-            const file = fileInput.files[0];
-            const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-            
-            if (file.size > maxSize) {
-                alert('File size exceeds 50MB limit. Please choose a smaller file.');
-                e.preventDefault();
-                return;
-            }
-            
-            // Show loading state
-            submitBtn.disabled = true;
-            submitText.textContent = 'Uploading...';
-            uploadLoading.style.display = 'inline-block';
-        });
-
-        // File input change handler
-        document.getElementById('file').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                console.log(`Selected file: ${file.name} (${sizeMB} MB)`);
+            xhr.addEventListener('load', function() {
+                uploadProgress.style.display = 'none';
+                uploadBtn.textContent = 'upload';
                 
-                // Show file info
-                const fileInfo = document.createElement('div');
-                fileInfo.style.cssText = 'margin-top: 0.5rem; color: #66ff66; font-size: 0.9rem;';
-                fileInfo.textContent = `Selected: ${file.name} (${sizeMB} MB)`;
-                
-                // Remove any existing file info
-                const existingInfo = document.querySelector('.file-info');
-                if (existingInfo) {
-                    existingInfo.remove();
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (xhr.status === 200 && response.success) {
+                        showStatus(`uploaded: ${response.filename} (${response.size})`, 'success');
+                        
+                        // Reset form
+                        uploadForm.reset();
+                        fileLabel.textContent = 'choose file';
+                        uploadBtn.disabled = true;
+                    } else {
+                        showStatus(response.error || 'upload failed', 'error');
+                        uploadBtn.disabled = false;
+                    }
+                } catch (error) {
+                    showStatus('upload failed', 'error');
+                    uploadBtn.disabled = false;
                 }
-                
-                fileInfo.className = 'file-info';
-                e.target.parentNode.appendChild(fileInfo);
-            }
+            });
+
+            xhr.addEventListener('error', function() {
+                uploadProgress.style.display = 'none';
+                uploadBtn.textContent = 'upload';
+                uploadBtn.disabled = false;
+                showStatus('upload failed', 'error');
+            });
+
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
         });
 
-        // Auto-focus file input
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('file').focus();
-        });
+        function showStatus(message, type) {
+            uploadStatus.textContent = message;
+            uploadStatus.className = `upload-status ${type}`;
+            uploadStatus.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    uploadStatus.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+        }
     </script>
 </body>
 </html>
