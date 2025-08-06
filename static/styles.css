@@ -166,12 +166,45 @@ nav span {
     margin-bottom: 30px;
 }
 
+.file-input-fallback {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #003300;
+    background: #0f0f0f;
+    text-align: left;
+}
+
+.file-input-fallback p {
+    color: #006600;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.file-input-fallback input[type="file"] {
+    color: #00aa00;
+    background: transparent;
+    border: none;
+    width: 100%;
+}
+
+.file-input-fallback input[type="file"]::file-selector-button {
+    background: #111111;
+    color: #00aa00;
+    border: 1px solid #003300;
+    padding: 8px 12px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+}
+
 #fileInput {
     display: none;
 }
 
 .file-input-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 20px 30px;
     background: #111111;
     border: 2px dashed #003300;
@@ -179,9 +212,9 @@ nav span {
     cursor: pointer;
     transition: all 0.3s ease;
     min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
 }
 
 .file-input-label:hover {
