@@ -3,169 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>upload - the wired</title>
+    <title>Upload - The Wired</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>the wired</h1>
-            <p>anonymous file sharing</p>
+            <h1>The Wired</h1>
+            <nav>
+                <a href="/" class="nav-link">Browse</a>
+                <a href="/upload" class="nav-link active">Upload</a>
+            </nav>
         </header>
-
-        <nav>
-            <a href="/">search</a>
-            <span>|</span>
-            <a href="#" class="active">upload</a>
-        </nav>
 
         <main>
             <div class="upload-section">
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="file-input-container">
-                        <input type="file" id="fileInput" name="file" required>
-                        <label for="fileInput" class="file-input-label">
-                            <span id="fileLabel">choose file</span>
+                <h2>Upload File</h2>
+                <div class="upload-area" id="uploadArea">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="file" id="fileInput" name="file" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.mp4,.mp3,.zip,.rar,.doc,.docx,.xls,.xlsx,.ppt,.pptx" required>
+                        <label for="fileInput" class="file-label">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">Click to select file or drag and drop</div>
+                            <div class="upload-info">Max size: 100MB</div>
                         </label>
-                        <div class="file-input-fallback">
-                            <p>If the button above doesn't work, try this direct file input:</p>
-                            <input type="file" id="fileInputFallback" name="fileFallback" style="color: #00aa00; background: transparent;">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" id="uploadBtn" disabled>upload</button>
-                </form>
-
+                        <button type="submit" class="upload-btn" id="uploadBtn" style="display: none;">Upload</button>
+                    </form>
+                </div>
+                
                 <div id="uploadStatus" class="upload-status"></div>
-                <div id="uploadProgress" class="progress-container" style="display: none;">
-                    <div class="progress-bar"></div>
+                <div id="uploadProgress" class="progress-bar" style="display: none;">
+                    <div class="progress-fill"></div>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
+        const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const fileInputFallback = document.getElementById('fileInputFallback');
-        const fileLabel = document.getElementById('fileLabel');
-        const uploadBtn = document.getElementById('uploadBtn');
         const uploadForm = document.getElementById('uploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
         const uploadStatus = document.getElementById('uploadStatus');
         const uploadProgress = document.getElementById('uploadProgress');
+        const fileLabel = document.querySelector('.file-label');
 
-        function handleFileSelection(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const fileName = file.name;
-                const fileSize = formatFileSize(file.size);
-                
-                fileLabel.textContent = `${fileName} (${fileSize})`;
-                uploadBtn.disabled = false;
-                
-                // Sync the other input
-                if (input === fileInput && fileInputFallback.files.length === 0) {
-                    // Can't programmatically set file input value for security reasons
-                } else if (input === fileInputFallback && fileInput.files.length === 0) {
-                    // Can't programmatically set file input value for security reasons  
-                }
-            } else {
-                fileLabel.textContent = 'choose file';
-                uploadBtn.disabled = true;
-            }
-        }
-
+        // File input change handler
         fileInput.addEventListener('change', function() {
-            handleFileSelection(this);
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                updateFileLabel(file.name);
+                uploadBtn.style.display = 'block';
+            }
         });
 
-        fileInputFallback.addEventListener('change', function() {
-            handleFileSelection(this);
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
         });
 
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileLabel(files[0].name);
+                uploadBtn.style.display = 'block';
+            }
+        });
+
+        // Form submission
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            if (!fileInput.files[0]) {
+                showStatus('Please select a file.', 'error');
+                return;
+            }
+
             const formData = new FormData();
-            const file = fileInput.files[0] || fileInputFallback.files[0];
-            
-            if (!file) {
-                showStatus('no file selected', 'error');
-                return;
-            }
-
-            if (file.size > 500 * 1024 * 1024) { // 500MB limit
-                showStatus('file too large (max 500MB)', 'error');
-                return;
-            }
-
-            formData.append('file', file);
+            formData.append('file', fileInput.files[0]);
 
             uploadBtn.disabled = true;
-            uploadBtn.textContent = 'uploading...';
+            uploadBtn.textContent = 'Uploading...';
             uploadProgress.style.display = 'block';
-
-            const xhr = new XMLHttpRequest();
-
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    const progressBar = uploadProgress.querySelector('.progress-bar');
-                    progressBar.style.width = percentComplete + '%';
-                }
-            });
-
-            xhr.addEventListener('load', function() {
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
                 uploadProgress.style.display = 'none';
-                uploadBtn.textContent = 'upload';
-                
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    
-                    if (xhr.status === 200 && response.success) {
-                        showStatus(`uploaded: ${response.filename} (${response.size})`, 'success');
-                        
-                        // Reset form
-                        uploadForm.reset();
-                        fileLabel.textContent = 'choose file';
-                        uploadBtn.disabled = true;
-                    } else {
-                        showStatus(response.error || 'upload failed', 'error');
-                        uploadBtn.disabled = false;
-                    }
-                } catch (error) {
-                    showStatus('upload failed', 'error');
-                    uploadBtn.disabled = false;
+                if (data.success) {
+                    showStatus(`File "${data.filename}" uploaded successfully!`, 'success');
+                    resetForm();
+                } else {
+                    showStatus(data.error || 'Upload failed.', 'error');
                 }
-            });
-
-            xhr.addEventListener('error', function() {
+            })
+            .catch(error => {
                 uploadProgress.style.display = 'none';
-                uploadBtn.textContent = 'upload';
+                showStatus('Upload failed. Please try again.', 'error');
+            })
+            .finally(() => {
                 uploadBtn.disabled = false;
-                showStatus('upload failed', 'error');
+                uploadBtn.textContent = 'Upload';
             });
-
-            xhr.open('POST', '/upload');
-            xhr.send(formData);
         });
+
+        function updateFileLabel(filename) {
+            fileLabel.innerHTML = `
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">${filename}</div>
+                <div class="upload-info">Click to change file</div>
+            `;
+        }
+
+        function resetForm() {
+            fileInput.value = '';
+            uploadBtn.style.display = 'none';
+            fileLabel.innerHTML = `
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Click to select file or drag and drop</div>
+                <div class="upload-info">Max size: 100MB</div>
+            `;
+        }
 
         function showStatus(message, type) {
             uploadStatus.textContent = message;
             uploadStatus.className = `upload-status ${type}`;
             uploadStatus.style.display = 'block';
             
-            if (type === 'success') {
-                setTimeout(() => {
-                    uploadStatus.style.display = 'none';
-                }, 5000);
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+            setTimeout(() => {
+                uploadStatus.style.display = 'none';
+            }, 5000);
         }
     </script>
 </body>
