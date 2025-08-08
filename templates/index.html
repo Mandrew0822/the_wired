@@ -3,113 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>the wired</title>
+    <title>The Wired - File Sharing</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>the wired</h1>
-            <p>We too must know.</p>
+            <h1>The Wired</h1>
+            <nav>
+                <a href="/" class="nav-link active">Browse</a>
+                <a href="/upload" class="nav-link">Upload</a>
+            </nav>
         </header>
-
-        <nav>
-            <a href="/upload">upload</a>
-            <span>|</span>
-            <a href="#" onclick="showBrowse()">browse</a>
-        </nav>
 
         <main>
             <div class="search-section">
-                <input type="text" id="searchInput" placeholder="search files..." autocomplete="off">
-                <div id="searchResults" class="results"></div>
+                <input type="text" id="searchInput" placeholder="Search files..." autocomplete="off">
+                <div id="searchResults" class="search-results" style="display: none;"></div>
             </div>
 
-            <div id="browseSection" class="browse-section" style="display: none;">
-                <div id="browseResults" class="results"></div>
+            <div class="files-section">
+                <h2>Recent Files</h2>
+                <div id="filesList" class="files-list">
+                    {% if files %}
+                        {% for file in files %}
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-name">{{ file.original_name }}</div>
+                                <div class="file-meta">{{ file.size_mb }} MB • {{ file.upload_date[:10] }}</div>
+                            </div>
+                            <a href="/download/{{ file.id }}" class="download-btn">Download</a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="no-files">No files uploaded yet.</div>
+                    {% endif %}
+                </div>
             </div>
         </main>
     </div>
 
     <script>
-        let searchTimeout;
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
-        const browseSection = document.getElementById('browseSection');
-        const browseResults = document.getElementById('browseResults');
+        const filesList = document.getElementById('filesList');
+        let searchTimeout;
 
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
             
             if (query.length < 2) {
-                searchResults.innerHTML = '';
+                searchResults.style.display = 'none';
                 return;
             }
-
+            
             searchTimeout = setTimeout(() => {
                 fetch(`/search?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(files => {
-                        displayResults(files, searchResults);
+                        if (files.length > 0) {
+                            searchResults.innerHTML = files.map(file => `
+                                <div class="file-item">
+                                    <div class="file-info">
+                                        <div class="file-name">${file.original_name}</div>
+                                        <div class="file-meta">${file.size_mb} MB • ${file.upload_date.substring(0, 10)}</div>
+                                    </div>
+                                    <a href="/download/${file.id}" class="download-btn">Download</a>
+                                </div>
+                            `).join('');
+                        } else {
+                            searchResults.innerHTML = '<div class="no-files">No files found.</div>';
+                        }
+                        searchResults.style.display = 'block';
                     })
                     .catch(error => {
-                        console.error('Search error:', error);
-                        searchResults.innerHTML = '<div class="error">search failed</div>';
+                        searchResults.innerHTML = '<div class="no-files">Search error.</div>';
+                        searchResults.style.display = 'block';
                     });
             }, 300);
         });
 
-        function showBrowse() {
-            if (browseSection.style.display === 'none') {
-                fetch('/files')
-                    .then(response => response.json())
-                    .then(files => {
-                        displayResults(files, browseResults);
-                        browseSection.style.display = 'block';
-                        searchResults.innerHTML = '';
-                        searchInput.value = '';
-                    })
-                    .catch(error => {
-                        console.error('Browse error:', error);
-                        browseResults.innerHTML = '<div class="error">browse failed</div>';
-                    });
-            } else {
-                browseSection.style.display = 'none';
-            }
-        }
-
-        function displayResults(files, container) {
-            if (files.length === 0) {
-                container.innerHTML = '<div class="no-results">no files found</div>';
-                return;
-            }
-
-            const resultsHTML = files.map(file => `
-                <div class="file-item">
-                    <div class="file-info">
-                        <span class="filename">${escapeHtml(file.name)}</span>
-                        <span class="file-meta">${file.size} • ${file.upload_time}</span>
-                    </div>
-                    <a href="/download/${file.id}" class="download-btn">download</a>
-                </div>
-            `).join('');
-
-            container.innerHTML = resultsHTML;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Clear search when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.search-section')) {
-                if (searchInput.value.trim() === '') {
-                    searchResults.innerHTML = '';
-                }
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
             }
         });
     </script>
